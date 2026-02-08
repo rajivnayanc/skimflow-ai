@@ -1,0 +1,152 @@
+/* Modern Popup UI */
+:root {
+    --primary-color: #222;
+    --primary-hover: #444;
+    --bg-color: #ffffff;
+    --text-color: #333;
+    --text-secondary: #666;
+    --border-color: #e0e0e0;
+    --input-bg: #f5f5f5;
+    --focus-ring: #000;
+    --radius: 8px;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary-color: #4a90e2;
+        --primary-hover: #357abd;
+        --bg-color: #1a1a1a;
+        --text-color: #f0f0f0;
+        --text-secondary: #aaa;
+        --border-color: #333;
+        --input-bg: #2a2a2a;
+        --focus-ring: #4a90e2;
+    }
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    width: 280px;
+    padding: 20px;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.2s, color 0.2s;
+}
+
+header {
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+h2 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+}
+
+.subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.control-group {
+    margin-bottom: 16px;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+input[type="number"],
+select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-bg);
+    border-radius: var(--radius);
+    color: var(--text-color);
+    font-size: 14px;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+input[type="number"]:focus,
+select:focus {
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Checkbox specific styling */
+.checkbox-card {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background-color: var(--input-bg);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: 1px solid transparent;
+    /* prevent layout shift on border change */
+}
+
+.checkbox-card:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+    .checkbox-card:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+}
+
+.checkbox-card input {
+    margin-right: 10px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+.checkbox-card label {
+    margin-bottom: 0;
+    font-size: 14px;
+    color: var(--text-color);
+    cursor: pointer;
+    flex: 1;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, background-color 0.2s;
+    box-shadow: var(--shadow);
+}
+
+.action-btn:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.action-btn:active {
+    transform: translateY(1px);
+}
