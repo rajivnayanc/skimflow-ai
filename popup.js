@@ -20,20 +20,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-        // Send message directly since content.js is loaded via manifest
-        chrome.tabs.sendMessage(tab.id, {
-            action: "start_rsvp",
-            settings: { wpm: wpm, smartHighlight: smartHighlight, theme: theme }
-        }, (response) => {
-            if (chrome.runtime.lastError) {
-                // If message fails, script might not be loaded (e.g. restricted page)
-                // We could try to inject it here as a fallback, but for now just showing error or ignoring.
-                // Given the error user saw, the script WAS there. 
-                console.error("FasterReading: Could not send message to content script.", chrome.runtime.lastError);
-                // Optional: Alert user if on a restricted page like chrome://
-            } else {
-                window.close();
-            }
-        });
+        if (!tab.id) return;
+
+        try {
+            // Inject CSS first
+            await chrome.scripting.insertCSS({
+                target: { tabId: tab.id },
+                files: ['styles.css']
+            });
+
+            // Inject Content Script
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                files: ['content.js']
+            });
+
+            // Send start message
+            chrome.tabs.sendMessage(tab.id, {
+                action: "start_rsvp",
+                settings: { wpm: wpm, smartHighlight: smartHighlight, theme: theme }
+            }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error("FasterReading: Could not send message to content script.", chrome.runtime.lastError);
+                    // Maybe alert the user? 
+                    // alert("Could not start reading. Refresh the page and try again.");
+                } else {
+                    window.close();
+                }
+            });
+        } catch (err) {
+            console.error("Failed to inject scripts", err);
+            // This usually happens on chrome:// pages or if permission is missing
+            alert("Cannot run on this page. Try a normal web page.");
+        }
     });
 });
