@@ -4,6 +4,7 @@ let isReading = false;
 let isPaused = true; // Start paused or playing?
 let wpm = 300;
 let smartHighlight = true; // Default
+let currentTheme = 'light';
 let paragraphs = [];
 let currentParagraphIndex = 0;
 let currentWordIndex = 0;
@@ -24,15 +25,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.settings.smartHighlight !== undefined) {
             smartHighlight = request.settings.smartHighlight;
         }
+        if (request.settings.theme) {
+            currentTheme = request.settings.theme;
+            console.log("FasterReading: Theme set to", currentTheme);
+        }
 
         if (!isReading) {
             initRSVP();
         } else {
+            console.log("FasterReading: Updating settings while reading...");
             // Update WPM if already reading
             updateSpeed();
             // Re-render if highlight setting changed
             renderParagraphToDOM();
             updateHighlightClass();
+            updateTheme();
             updateDisplay();
         }
         sendResponse({ status: "started" });
@@ -101,11 +108,19 @@ function createOverlay() {
             <div id="fr-progress-bar"></div>
         </div>
         <div id="fr-controls">
-            <button id="fr-prev-para" class="fr-btn">Prev Para</button>
-            <button id="fr-play-pause" class="fr-btn primary">Pause</button>
-            <button id="fr-next-para" class="fr-btn">Next Para</button>
+            <button id="fr-prev-para" class="fr-btn" title="Previous Paragraph (Left Arrow)">Prev</button>
+            <button id="fr-play-pause" class="fr-btn primary" title="Play/Pause (Space)">Pause</button>
+            <button id="fr-next-para" class="fr-btn" title="Next Paragraph (Right Arrow)">Next</button>
+            
+            <div class="fr-wpm-control">
+                <label for="fr-wpm-input">WPM:</label>
+                <input type="number" id="fr-wpm-input" value="${wpm}" step="50" min="50" max="1000">
+            </div>
         </div>
         <div id="fr-status" style="margin-top:10px; font-size:12px; color:#888;"></div>
+        <div id="fr-shortcuts" style="margin-top:5px; font-size:11px; color:#aaa;">
+            Space: Play/Pause &bull; Arrows: Prev/Next &bull; Esc: Close
+        </div>
     `;
 
     document.body.appendChild(overlay);
@@ -116,6 +131,21 @@ function createOverlay() {
     playPauseBtn.addEventListener('click', togglePause);
     document.getElementById('fr-prev-para').addEventListener('click', () => jumpParagraph(-1));
     document.getElementById('fr-next-para').addEventListener('click', () => jumpParagraph(1));
+
+    // WPM Control
+    const wpmInput = document.getElementById('fr-wpm-input');
+    wpmInput.addEventListener('change', (e) => {
+        let newWpm = parseInt(e.target.value, 10);
+        if (newWpm && newWpm > 0) {
+            wpm = newWpm;
+            // Update storage if desired, but for now just session update
+            chrome.storage.sync.set({ wpm: wpm });
+
+            updateSpeed();
+            updateStatus();
+        }
+    });
+
     statusDisplay = document.getElementById('fr-status');
 
     // Keyboard events
@@ -128,13 +158,16 @@ function createOverlay() {
 function handleKeydown(e) {
     if (!isReading) return;
     if (e.code === 'Space') {
+        if (document.activeElement.tagName === 'INPUT') return; // Don't block loading space in input
         e.preventDefault();
         togglePause();
     } else if (e.code === 'ArrowLeft') {
+        if (document.activeElement.tagName === 'INPUT') return;
         // Rewind a few words or jump paragraph
         if (e.shiftKey) jumpParagraph(-1);
         else jumpWord(-5);
     } else if (e.code === 'ArrowRight') {
+        if (document.activeElement.tagName === 'INPUT') return;
         if (e.shiftKey) jumpParagraph(1);
         else jumpWord(5);
     } else if (e.code === 'Escape') {
@@ -356,6 +389,27 @@ function updateHighlightClass() {
             overlay.classList.add('fr-smart-highlight-enabled');
         } else {
             overlay.classList.remove('fr-smart-highlight-enabled');
+        }
+    }
+}
+
+function updateTheme() {
+    if (!overlay) return;
+
+    // Reset classes
+    overlay.classList.remove('fr-theme-dark');
+    overlay.classList.remove('fr-theme-light');
+
+    console.log("FasterReading: Applying Theme:", currentTheme);
+
+    if (currentTheme === 'dark') {
+        overlay.classList.add('fr-theme-dark');
+    } else if (currentTheme === 'light') {
+        // Default is light
+    } else if (currentTheme === 'auto') {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            overlay.classList.add('fr-theme-dark');
+            console.log("FasterReading: Auto theme detected Dark mode");
         }
     }
 }

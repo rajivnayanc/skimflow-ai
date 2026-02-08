@@ -1,3 +1,69 @@
+/* Theme Definitions */
+:root {
+    --fr-bg: rgba(255, 255, 255, 0.98);
+    --fr-container-bg: #fff;
+    --fr-text: #333;
+    --fr-text-dim: #888;
+    --fr-border: #f0f0f0;
+    --fr-primary: #222;
+    --fr-primary-text: #fff;
+    --fr-highlight: #e63946;
+    --fr-shadow: rgba(0, 0, 0, 0.15);
+    --fr-control-bg: #fff;
+    --fr-control-border: #ddd;
+    --fr-control-text: #555;
+    --fr-control-hover: #f9f9f9;
+}
+
+/* Dark Theme Overrides */
+/* Dark Theme Overrides - High Specificity */
+#fr-overlay.fr-theme-dark {
+    --fr-bg: rgba(20, 20, 20, 0.98) !important;
+    --fr-container-bg: #2a2a2a !important;
+    --fr-text: #e0e0e0 !important;
+    --fr-text-dim: #aaa !important;
+    --fr-border: #444 !important;
+    --fr-primary: #4a90e2 !important;
+    --fr-primary-text: #fff !important;
+    --fr-highlight: #ff6b6b !important;
+    --fr-shadow: rgba(0, 0, 0, 0.5) !important;
+    --fr-control-bg: #333 !important;
+    --fr-control-border: #444 !important;
+    --fr-control-text: #ccc !important;
+    --fr-control-hover: #444 !important;
+
+    /* Explicit overrides to ensure connection if vars fail */
+    background-color: var(--fr-bg) !important;
+    color: var(--fr-text) !important;
+}
+
+#fr-overlay.fr-theme-dark #fr-reader-container {
+    background-color: var(--fr-container-bg) !important;
+    border-color: var(--fr-border) !important;
+    box-shadow: 0 10px 40px var(--fr-shadow) !important;
+}
+
+#fr-overlay.fr-theme-dark .fr-btn {
+    background-color: var(--fr-control-bg) !important;
+    border-color: var(--fr-control-border) !important;
+    color: var(--fr-control-text) !important;
+}
+
+#fr-overlay.fr-theme-dark .fr-btn:hover {
+    background-color: var(--fr-control-hover) !important;
+}
+
+#fr-overlay.fr-theme-dark .fr-word.active {
+    color: var(--fr-text) !important;
+}
+
+#fr-overlay.fr-theme-dark .fr-wpm-control,
+#fr-overlay.fr-theme-dark .fr-wpm-control input {
+    background-color: var(--fr-control-bg) !important;
+    border-color: var(--fr-control-border) !important;
+    color: var(--fr-text) !important;
+}
+
 /* Overlay Container */
 #fr-overlay {
     position: fixed;
@@ -5,15 +71,14 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(255, 255, 255, 0.98);
+    background-color: var(--fr-bg);
     z-index: 2147483647;
-    /* Max Z-Index */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     font-family: 'Segoe UI', sans-serif;
-    color: #333;
+    color: var(--fr-text);
 }
 
 /* Reader Display Box */
@@ -22,39 +87,33 @@
     width: 80%;
     max-width: 800px;
     height: 180px;
-    background: #fff;
+    background: var(--fr-container-bg);
     border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 10px 40px var(--fr-shadow);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    /* Hide words sliding out */
-    border: 1px solid #f0f0f0;
+    border: 1px solid var(--fr-border);
 }
 
 /* The Sliding Strip */
 #fr-word-strip {
     display: flex;
     align-items: center;
-    /* transition: transform 0.1s linear;  <-- Managed by JS loop for better control? Or keep CSS transition for smoothness? */
-    /* Use CSS transition for smooth sliding between words */
     transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     will-change: transform;
     white-space: nowrap;
     position: absolute;
     left: 50%;
-    /* Transformation handled in JS */
 }
 
 .fr-word {
     font-size: 36px;
     font-weight: 400;
     padding: 0 15px;
-    /* Spacing between words */
-    color: #888;
+    color: var(--fr-text-dim);
     opacity: 0.2;
-    /* Default context opacity */
     transition: opacity 0.2s, color 0.2s, transform 0.2s;
     line-height: 1;
 }
@@ -67,27 +126,16 @@
 .fr-word.active {
     opacity: 1;
     font-weight: 700;
-    /* Default: bold whole word */
-    color: #222;
+    color: var(--fr-text);
     transform: scale(1.15);
 }
 
-/* If Smart Highlight is enabled, don't bold the entire active word, rely on <b> tags */
 .fr-smart-highlight-enabled .fr-word.active {
     font-weight: 400;
-    /* Normal weight for the container */
 }
 
-/* Ensure <b> tags are bold and noticeable */
-.fr-word b {
-    font-weight: 700;
-    color: inherit;
-}
-
-/* Optional: Make the bold part of the active word even stronger or colored ? */
 .fr-smart-highlight-enabled .fr-word.active b {
-    color: #e63946;
-    /* Optional highlight color for the fixation point */
+    color: var(--fr-highlight);
 }
 
 /* Controls */
@@ -98,34 +146,36 @@
 }
 
 .fr-btn {
-    background: #fff;
-    border: 1px solid #ddd;
+    background: var(--fr-control-bg);
+    border: 1px solid var(--fr-control-border);
     padding: 12px 24px;
     font-size: 16px;
     cursor: pointer;
     border-radius: 8px;
     transition: all 0.2s;
     font-weight: 500;
-    color: #555;
+    color: var(--fr-control-text);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .fr-btn:hover {
-    background: #f9f9f9;
+    background: var(--fr-control-hover);
     border-color: #ccc;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .fr-btn.primary {
-    background: #222;
-    color: white;
-    border-color: #222;
+    background: var(--fr-primary);
+    color: var(--fr-primary-text);
+    border-color: var(--fr-primary);
 }
 
 .fr-btn.primary:hover {
-    background: #444;
-    border-color: #444;
+    background: var(--fr-primary);
+    /* Slight adjust? */
+    opacity: 0.9;
+    border-color: var(--fr-primary);
 }
 
 /* Close Button */
@@ -137,13 +187,13 @@
     border: none;
     font-size: 32px;
     cursor: pointer;
-    color: #ccc;
+    color: var(--fr-text-dim);
     transition: color 0.2s;
     line-height: 1;
 }
 
 #fr-close:hover {
-    color: #333;
+    color: var(--fr-text);
 }
 
 /* Progress Bar */
@@ -151,7 +201,7 @@
     width: 80%;
     max-width: 800px;
     height: 6px;
-    background: #f0f0f0;
+    background: var(--fr-border);
     margin-top: 30px;
     border-radius: 3px;
     overflow: hidden;
@@ -159,7 +209,7 @@
 
 #fr-progress-bar {
     height: 100%;
-    background: #222;
+    background: var(--fr-primary);
     width: 0%;
     transition: width 0.3s ease;
 }
@@ -168,6 +218,38 @@
 #fr-status {
     margin-top: 15px;
     font-size: 14px;
-    color: #999;
+    color: var(--fr-text-dim);
     font-family: monospace;
+}
+
+#fr-shortcuts {
+    margin-top: 5px;
+    font-size: 11px;
+    color: var(--fr-text-dim);
+    font-family: sans-serif;
+    letter-spacing: 0.5px;
+}
+
+.fr-wpm-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 10px;
+    font-size: 14px;
+    color: var(--fr-control-text);
+    background: var(--fr-control-bg);
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--fr-control-border);
+}
+
+.fr-wpm-control input {
+    width: 60px;
+    padding: 4px;
+    border: 1px solid var(--fr-control-border);
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: center;
+    background-color: var(--fr-control-bg);
+    color: var(--fr-text);
 }
