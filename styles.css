@@ -59,11 +59,35 @@
     line-height: 1;
 }
 
+.fr-word b {
+    font-weight: 700;
+    color: inherit;
+}
+
 .fr-word.active {
     opacity: 1;
     font-weight: 700;
+    /* Default: bold whole word */
     color: #222;
     transform: scale(1.15);
+}
+
+/* If Smart Highlight is enabled, don't bold the entire active word, rely on <b> tags */
+.fr-smart-highlight-enabled .fr-word.active {
+    font-weight: 400;
+    /* Normal weight for the container */
+}
+
+/* Ensure <b> tags are bold and noticeable */
+.fr-word b {
+    font-weight: 700;
+    color: inherit;
+}
+
+/* Optional: Make the bold part of the active word even stronger or colored ? */
+.fr-smart-highlight-enabled .fr-word.active b {
+    color: #e63946;
+    /* Optional highlight color for the fixation point */
 }
 
 /* Controls */

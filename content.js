@@ -3,6 +3,7 @@
 let isReading = false;
 let isPaused = true; // Start paused or playing?
 let wpm = 300;
+let smartHighlight = true; // Default
 let paragraphs = [];
 let currentParagraphIndex = 0;
 let currentWordIndex = 0;
@@ -20,11 +21,19 @@ let statusDisplay = null;
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "start_rsvp") {
         wpm = request.settings.wpm;
+        if (request.settings.smartHighlight !== undefined) {
+            smartHighlight = request.settings.smartHighlight;
+        }
+
         if (!isReading) {
             initRSVP();
         } else {
             // Update WPM if already reading
             updateSpeed();
+            // Re-render if highlight setting changed
+            renderParagraphToDOM();
+            updateHighlightClass();
+            updateDisplay();
         }
         sendResponse({ status: "started" });
     }
@@ -38,6 +47,7 @@ function initRSVP() {
     }
 
     createOverlay();
+    updateHighlightClass();
     isReading = true;
     isPaused = false;
     currentParagraphIndex = 0;
@@ -160,7 +170,13 @@ function renderParagraphToDOM() {
     const fragment = document.createDocumentFragment();
     wordQueue.forEach((word, i) => {
         const span = document.createElement('span');
-        span.textContent = word;
+
+        if (smartHighlight) {
+            span.innerHTML = getSmartText(word);
+        } else {
+            span.textContent = word;
+        }
+
         span.className = 'fr-word';
         span.dataset.index = i;
         fragment.appendChild(span);
@@ -170,6 +186,24 @@ function renderParagraphToDOM() {
 
     // Force layout recalc to ensure we can measure widths if needed, 
     // but the flex layout should handle it.
+}
+
+function getSmartText(word) {
+    // Simple Bionic Reading algorithm
+    const len = word.length;
+    if (len === 0) return word;
+    if (len === 1) return `<b>${word}</b>`;
+
+    let boldLen = 1;
+    if (len <= 3) boldLen = 1;
+    else if (len <= 5) boldLen = 2;
+    else if (len <= 7) boldLen = 3;
+    else boldLen = Math.ceil(len * 0.4); // 40% rule for longer words
+
+    const boldPart = word.substring(0, boldLen);
+    const normalPart = word.substring(boldLen);
+
+    return `<b>${boldPart}</b>${normalPart}`;
 }
 
 function updateDisplay() {
@@ -195,12 +229,6 @@ function updateDisplay() {
         const offset = currentWordEl.offsetLeft + (currentWordEl.offsetWidth / 2);
         wordStrip.style.transform = `translateX(-${offset}px)`;
     }
-
-    // Fade context logic handled by CSS (.active has opacity 1, others 0.25)
-    // Maybe we want near neighbors to be slightly more visible?
-    // CSS can't easily select "siblings near active", so JS adjustment might be needed for advanced fading.
-    // For now, simple active/inactive opacity is fine as per MVP.
-    // Actually, user asked for "context text as well before and after". 0.25 opacity provides that.
 
     // Update progress bar
     const totalParas = paragraphs.length;
@@ -315,8 +343,19 @@ function stopRSVP() {
     isPaused = false;
     stopLoop();
     if (overlay) {
+        overlay.classList.remove('fr-smart-highlight-enabled'); // Cleanup
         overlay.remove();
         overlay = null;
     }
     document.removeEventListener('keydown', handleKeydown);
+}
+
+function updateHighlightClass() {
+    if (overlay) {
+        if (smartHighlight) {
+            overlay.classList.add('fr-smart-highlight-enabled');
+        } else {
+            overlay.classList.remove('fr-smart-highlight-enabled');
+        }
+    }
 }
