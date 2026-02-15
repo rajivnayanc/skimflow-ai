@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "SkimFlow AI: Speed Reading & Summarization",
+    "name": "(Dev) SkimFlow AI: Speed Reading & Summarization",
     "version": "1.0.0",
     "description": "Read faster with RSVP, AI summarization, and smart formatting.",
     "permissions": [
@@ -14,7 +14,7 @@
         "128": "icons/icon128.png"
     },
     "action": {
-        "default_popup": "popup.html",
+        "default_popup": "public/popup.html",
         "default_icon": {
             "16": "icons/icon16.png",
             "48": "icons/icon48.png",
@@ -22,6 +22,6 @@
         }
     },
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "src/background.js"
     }
 }

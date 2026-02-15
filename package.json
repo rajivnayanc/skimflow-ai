@@ -1,0 +1,24 @@
+{
+  "name": "skimflow-ai",
+  "version": "1.0.0",
+  "description": "Read faster with RSVP, AI summarization, and smart formatting.",
+  "main": "background.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "skimming",
+    "fast",
+    "reading",
+    "speed",
+    "reading"
+  ],
+  "author": "rajivnayanc",
+  "license": "ISC",
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.3.0",
+    "vite": "^7.3.1"
+  }
+}

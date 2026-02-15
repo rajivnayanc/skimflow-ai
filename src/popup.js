@@ -1,3 +1,5 @@
+import contentScript from '../src/content.js?script';
+
 document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('startData');
     const wpmInput = document.getElementById('wpm');
@@ -32,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Inject Content Script
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
-                files: ['content.js']
+                files: [contentScript]
             });
 
             // Send start message
