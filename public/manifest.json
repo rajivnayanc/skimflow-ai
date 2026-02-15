@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "(Dev) SkimFlow AI: Speed Reading & Summarization",
+    "name": "SkimFlow AI: Speed Reading & Summarization",
     "version": "1.0.0",
     "description": "Read faster with RSVP, AI summarization, and smart formatting.",
     "permissions": [
