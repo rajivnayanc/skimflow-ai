@@ -1,13 +1,19 @@
-import contentScript from '../src/content.js?script';
-
 // Background service worker
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
     console.log('Faster Reading Extension installed');
     chrome.contextMenus.create({
         id: "read-selection",
         title: "Read with SkimFlow",
         contexts: ["selection"]
     });
+
+    // Open options page on install or update to show what's new
+    if (details.reason === 'install') {
+        chrome.runtime.openOptionsPage();
+    } else if (details.reason === 'update') {
+        // Optional: specific version check if needed
+        chrome.runtime.openOptionsPage();
+    }
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {

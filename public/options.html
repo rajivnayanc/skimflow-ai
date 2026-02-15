@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkimFlow AI - Options & Updates</title>
+    <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="options.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>SkimFlow AI</h1>
+            <div class="subtitle">Release Notes & Options</div>
+        </header>
+
+        <section class="update-section">
+            <h2>What's New in Version 1.1.0</h2>
+            <ul>
+                <li><strong>Context Menu Reading:</strong> Select any text on a webpage, right-click, and choose "Read
+                    with SkimFlow" to read just that selection.</li>
+                <li><strong>Robust Injection:</strong> Improved reliability when using the extension on freshly opened
+                    tabs.</li>
+                <li><strong>Settings Sync:</strong> Context menu reading now respects your saved WPM and theme settings.
+                </li>
+            </ul>
+        </section>
+
+        <section class="options-section">
+            <h2>Settings</h2>
+            <div class="control-group">
+                <label for="wpm">Default Reading Speed (WPM)</label>
+                <input type="number" id="wpm" min="50" max="1000" step="50">
+            </div>
+            <div class="control-group">
+                <label for="theme">Theme</label>
+                <select id="theme">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="auto">System</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <div class="checkbox-card">
+                    <input type="checkbox" id="smartHighlight">
+                    <label for="smartHighlight">Smart Highlight (Bionic Reading)</label>
+                </div>
+            </div>
+            <button id="save" class="action-btn">Save Settings</button>
+            <div id="status" class="status-msg"></div>
+        </section>
+
+        <footer>
+            <p>SkimFlow AI v1.1.0</p>
+        </footer>
+    </div>
+    <script type="module" src="../src/options.js"></script>
+</body>
+
+</html>
