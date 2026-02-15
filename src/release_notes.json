@@ -1,0 +1,10 @@
+[
+    {
+        "version": "1.1.1",
+        "changes": [
+            "Context Menu Reading: Select any text on a webpage, right-click, and choose \"Read with SkimFlow\" to read just that selection.",
+            "Robust Injection: Improved reliability when using the extension on freshly opened tabs.",
+            "Settings Sync: Context menu reading now respects your saved WPM and theme settings."
+        ]
+    }
+]

@@ -17,14 +17,8 @@
         </header>
 
         <section class="update-section">
-            <h2>What's New in Version 1.1.0</h2>
-            <ul>
-                <li><strong>Context Menu Reading:</strong> Select any text on a webpage, right-click, and choose "Read
-                    with SkimFlow" to read just that selection.</li>
-                <li><strong>Robust Injection:</strong> Improved reliability when using the extension on freshly opened
-                    tabs.</li>
-                <li><strong>Settings Sync:</strong> Context menu reading now respects your saved WPM and theme settings.
-                </li>
+            <h2>What's New in Version <span id="version-number"></span></h2>
+            <ul id="release-notes-list">
             </ul>
         </section>
 
@@ -43,8 +37,8 @@
                 </select>
             </div>
             <div class="control-group">
-                <div class="checkbox-card">
-                    <input type="checkbox" id="smartHighlight">
+                <div class="checkbox-card" onclick="document.getElementById('smartHighlight').click()">
+                    <input type="checkbox" id="smartHighlight" onclick="event.stopPropagation()">
                     <label for="smartHighlight">Smart Highlight (Bionic Reading)</label>
                 </div>
             </div>
@@ -53,7 +47,7 @@
         </section>
 
         <footer>
-            <p>SkimFlow AI v1.1.0</p>
+            <p>SkimFlow AI v<span id="footer-version"></span></p>
         </footer>
     </div>
     <script type="module" src="../src/options.js"></script>

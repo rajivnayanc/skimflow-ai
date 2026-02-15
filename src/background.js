@@ -1,3 +1,5 @@
+import contentScript from '../src/content.js?script';
+
 // Background service worker
 chrome.runtime.onInstalled.addListener((details) => {
     console.log('Faster Reading Extension installed');
