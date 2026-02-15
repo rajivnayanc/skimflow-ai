@@ -1,27 +1,28 @@
 {
-    "manifest_version": 3,
-    "name": "SkimFlow AI: Speed Reading & Summarization",
-    "version": "1.0.0",
-    "description": "Read faster with RSVP, AI summarization, and smart formatting.",
-    "permissions": [
-        "activeTab",
-        "scripting",
-        "storage"
-    ],
-    "icons": {
-        "16": "icons/icon16.png",
-        "48": "icons/icon48.png",
-        "128": "icons/icon128.png"
-    },
-    "action": {
-        "default_popup": "public/popup.html",
-        "default_icon": {
-            "16": "icons/icon16.png",
-            "48": "icons/icon48.png",
-            "128": "icons/icon128.png"
-        }
-    },
-    "background": {
-        "service_worker": "src/background.js"
+  "manifest_version": 3,
+  "name": "SkimFlow AI: Speed Reading & Summarization",
+  "version": "1.0.0",
+  "description": "Read faster with RSVP, AI summarization, and smart formatting.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "contextMenus"
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "public/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
     }
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  }
 }

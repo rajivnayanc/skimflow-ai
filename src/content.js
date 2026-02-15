@@ -7,7 +7,7 @@ if (window.skimFlowInitialized) {
     // Variables
     let isReading = false;
     let isPaused = true; // Start paused or playing?
-    let wpm = 300;
+    let wpm = 200;
     let smartHighlight = true; // Default
     let currentTheme = 'light';
     let paragraphs = [];
@@ -36,7 +36,7 @@ if (window.skimFlowInitialized) {
             }
 
             if (!isReading) {
-                initRSVP();
+                initRSVP(request.text);
             } else {
                 console.log("FasterReading: Updating settings while reading...");
                 // Update WPM if already reading
@@ -51,10 +51,25 @@ if (window.skimFlowInitialized) {
         }
     });
 
-    function initRSVP() {
-        extractParagraphs();
+    function initRSVP(text = null) {
+        if (text) {
+            // Process the provided text directly
+            paragraphs = [];
+            // Split by double newlines or just newlines? Let's treat newlines as potential paragraph breaks
+            // Filter out empty lines
+            const rawParas = text.split(/\n+/).filter(p => p.trim().length > 0);
+            rawParas.forEach(pText => {
+                const words = pText.trim().split(/\s+/);
+                if (words.length > 0) {
+                    paragraphs.push(words);
+                }
+            });
+        } else {
+            extractParagraphs();
+        }
+
         if (paragraphs.length === 0) {
-            alert("No readable text found on this page.");
+            alert("No readable text found.");
             return;
         }
 

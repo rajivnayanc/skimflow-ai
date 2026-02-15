@@ -5,9 +5,13 @@
   "main": "background.js",
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm run version",
     "build": "vite build",
     "preview": "vite preview",
-    "zip": "cd dist && bestzip ../output.zip *"
+    "predeploy": "npm run build",
+    "deploy": "cd dist && bestzip ../output.zip *",
+    "version": "npm run version:manifest",
+    "version:manifest": "node -e \"const fs = require('fs'); const pkg = require('./package.json'); const manifest = require('./public/manifest.json'); manifest.version = pkg.version; fs.writeFileSync('./public/manifest.json', JSON.stringify(manifest, null, 2));\""
   },
   "keywords": [
     "skimming",
