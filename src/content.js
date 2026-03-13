@@ -22,6 +22,10 @@ if (window.skimFlowInitialized) {
     let playPauseBtn = null;
     let statusDisplay = null;
 
+    // Summary UI Elements
+    let summaryOverlay = null;
+    let summaryContent = null;
+
     // Listen for messages from Popup
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === "start_rsvp") {
@@ -90,6 +94,15 @@ if (window.skimFlowInitialized) {
                 initRSVP(request.text);
             }
             sendResponse({ status: "appended" });
+        } else if (request.action === "summarize_text") {
+            if (request.settings && request.settings.theme) {
+                currentTheme = request.settings.theme;
+            }
+            startSummarizer(request.text, {
+                type: request.summaryType || 'key-points',
+                length: request.summaryLength || 'medium'
+            });
+            sendResponse({ status: "started" });
         }
     });
 
@@ -516,6 +529,310 @@ if (window.skimFlowInitialized) {
                 overlay.classList.add('fr-theme-dark');
                 console.log("FasterReading: Auto theme detected Dark mode");
             }
+        }
+    }
+
+    // --- Summarizer Functionality ---
+
+    let activeTldrSummarizer = null;
+    let activeFinalSummarizer = null;
+
+    function createSummaryOverlay() {
+        if (summaryOverlay) return;
+
+        summaryOverlay = document.createElement('div');
+        summaryOverlay.id = 'fr-summary-overlay';
+
+        // Apply theme to summary overlay
+        if (currentTheme === 'dark' || (currentTheme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            summaryOverlay.classList.add('fr-theme-dark');
+        }
+
+        summaryOverlay.innerHTML = `
+            <div id="fr-summary-container">
+                <div class="fr-summary-header">
+                    <h2>SkimFlow Summary</h2>
+                    <button id="fr-summary-close" style="background:transparent; border:none; cursor:pointer; font-size:24px; color:var(--fr-text-dim); transition:color 0.2s;">&times;</button>
+                </div>
+                <div id="fr-summary-content">
+                    <div class="fr-skeleton">
+                        <div class="fr-skeleton-line w-80"></div>
+                        <div class="fr-skeleton-line w-100"></div>
+                        <div class="fr-skeleton-line w-90"></div>
+                        <div class="fr-skeleton-line w-60"></div>
+                        <div style="margin-top:20px;"></div>
+                        <div class="fr-skeleton-line w-80"></div>
+                        <div class="fr-skeleton-line w-90"></div>
+                        <div class="fr-skeleton-line w-40"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(summaryOverlay);
+        summaryContent = document.getElementById('fr-summary-content');
+
+        document.getElementById('fr-summary-close').addEventListener('click', closeSummaryOverlay);
+    }
+
+    function closeSummaryOverlay() {
+        if (summaryOverlay) {
+            summaryOverlay.remove();
+            summaryOverlay = null;
+            summaryContent = null;
+        }
+
+        // Clean up active summarizers if closed early
+        if (activeTldrSummarizer && typeof activeTldrSummarizer.destroy === 'function') {
+            try { activeTldrSummarizer.destroy(); } catch (e) { console.error(e); }
+            activeTldrSummarizer = null;
+        }
+        if (activeFinalSummarizer && typeof activeFinalSummarizer.destroy === 'function') {
+            try { activeFinalSummarizer.destroy(); } catch (e) { console.error(e); }
+            activeFinalSummarizer = null;
+        }
+    }
+
+    const simpleMarkdownToHtml = (markdown) => {
+        if (!markdown) return "";
+        let html = markdown
+            // Headers
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            // Bold
+            .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+            // Bullet points
+            .replace(/^\s*\*(.*$)/gim, '<ul><li>$1</li></ul>')
+            // Combine consecutive lists
+            .replace(/<\/ul>\n<ul>/gim, '')
+            // Paragraphs
+            .split('\n\n').map(p => {
+                if (p.startsWith('<h') || p.startsWith('<ul>') || p.trim() === '') return p;
+                return `<p>${p}</p>`;
+            }).join('\n');
+
+        return html;
+    };
+
+    const chunkText = (text, chunkSize = 3000, chunkOverlap = 200) => {
+        const chunks = [];
+        let i = 0;
+        while (i < text.length) {
+            chunks.push(text.slice(i, i + chunkSize));
+            i += chunkSize - chunkOverlap;
+        }
+        return chunks;
+    };
+
+    const recursiveSummarizer = async (textChunks, fullSummaries = []) => {
+        let partialSummaries = [];
+        let currentConcatenatedLength = 0;
+
+        let tldrSummarizer;
+        try {
+            tldrSummarizer = await self.Summarizer.create({ 
+                type: 'tldr', 
+
+                format: 'plain-text', 
+                length: 'long',
+                monitor(m) {
+                    m.addEventListener('downloadprogress', (e) => {
+                        const percent = Math.round(e.loaded * 100);
+                        if (summaryContent) {
+                            if (e.loaded < 1) {
+                                summaryContent.innerHTML = `
+                                    <div class="fr-skeleton" style="margin-bottom:20px; color:var(--fr-text-dim);">
+                                        Downloading AI model... ${percent}%
+                                    </div>
+                                    <div style="width:100%; height:6px; background:var(--fr-border); margin-top:10px; border-radius:3px; overflow:hidden;">
+                                        <div style="height:100%; background:var(--fr-primary); width:${percent}%; transition:width 0.3s ease;"></div>
+                                    </div>
+                                `;
+                            } else {
+                                summaryContent.innerHTML = `
+                                    <div class="fr-skeleton" style="margin-bottom:20px; color:var(--fr-text-dim);">
+                                        Loading model into memory...
+                                    </div>
+                                    <div class="fr-skeleton">
+                                        <div class="fr-skeleton-line w-80"></div>
+                                    </div>
+                                `;
+                            }
+                        }
+                    });
+                }
+            });
+            activeTldrSummarizer = tldrSummarizer;
+        } catch (e) {
+            console.error("Failed to create tldr summarizer:", e);
+            throw new Error("Could not create intermediate summarizer. Ensure Chrome AI flags are enabled.");
+        }
+
+        for (const chunk of textChunks) {
+            try {
+                const summary = await tldrSummarizer.summarize(chunk);
+                partialSummaries.push(summary);
+                currentConcatenatedLength += summary.length;
+
+                // If it gets too long, save to fullSummaries
+                if (currentConcatenatedLength > 3000) {
+                    fullSummaries.push(partialSummaries.join('\n'));
+                    partialSummaries = [];
+                    currentConcatenatedLength = 0;
+                }
+            } catch (e) {
+                console.error("Failed to summarize chunk:", chunk.substring(0, 100), e);
+            }
+        }
+
+        if (partialSummaries.length > 0) {
+            fullSummaries.push(partialSummaries.join('\n'));
+        }
+
+        if (tldrSummarizer && typeof tldrSummarizer.destroy === 'function') {
+            try { tldrSummarizer.destroy(); } catch(e) {}
+            if (activeTldrSummarizer === tldrSummarizer) activeTldrSummarizer = null;
+        }
+
+        if (fullSummaries.length === 1) {
+            return fullSummaries[0];
+        } else {
+            // Recurse until we have 1 chunk
+            return recursiveSummarizer(fullSummaries, []);
+        }
+    };
+
+    async function startSummarizer(text, options = { type: 'key-points', length: 'medium' }) {
+        createSummaryOverlay();
+
+        if (!self.Summarizer) {
+            summaryContent.innerHTML = `
+                <div style="color:var(--fr-highlight); font-weight:bold; margin-bottom:10px;">Built-in AI Summarizer API not found.</div>
+                <p>Ensure you are on Chrome 131+ and have enabled the necessary flags for the Summarizer API:</p>
+                <ul style="color:var(--fr-text-dim);">
+                    <li>Enable <code>chrome://flags/#summarization-api-for-gemini-nano</code></li>
+                    <li>Enable <code>chrome://flags/#optimization-guide-on-device-model</code></li>
+                </ul>
+            `;
+            return;
+        }
+
+        try {
+            const availability = await self.Summarizer.availability();
+            if (availability === 'unavailable') {
+                summaryContent.innerHTML = `<div style="color:var(--fr-highlight);">The AI summarizer is currently unavailable on this device.</div>`;
+                return;
+            }
+
+            // Check for user activation according to Chrome AI docs
+            if (!navigator.userActivation.isActive) {
+                console.warn("Summarizer API requires user activation. However it might still work in an extension context depending on the trigger.");
+            }
+
+            // Set initial status based on availability
+            // Per Chrome docs: 'available', 'downloadable', 'downloading', or 'unavailable'
+            let modelNeedsDownload = false;
+            let statusText = "Initializing...";
+            if (availability === 'downloadable') {
+                statusText = "AI model needs to be downloaded first...";
+                modelNeedsDownload = true;
+            } else if (availability === 'downloading') {
+                statusText = "AI model is downloading...";
+                modelNeedsDownload = true;
+            } else if (availability === 'available') {
+                statusText = "AI model ready. Summarizing...";
+            }
+
+            summaryContent.innerHTML = `
+                <div class="fr-skeleton" style="margin-bottom:20px; color:var(--fr-text-dim);">
+                    ${statusText}
+                </div>
+                ${modelNeedsDownload ? '<div style="width:100%; height:6px; background:var(--fr-border); margin-top:10px; border-radius:3px; overflow:hidden;"><div style="height:100%; background:var(--fr-primary); width:0%; transition:width 0.3s ease;"></div></div>' : ''}
+                <div class="fr-skeleton">
+                    <div class="fr-skeleton-line w-80"></div>
+                    <div class="fr-skeleton-line w-100"></div>
+                </div>
+            `;
+
+            let textToSummarize = text;
+
+            // Handle scale summarization for long text (> 3000 chars roughly)
+            if (text.length > 4000) {
+                try {
+                    summaryContent.innerHTML = `
+                        <div class="fr-skeleton" style="margin-bottom:20px; color:var(--fr-text-dim);">
+                            Text is long. Summarizing in sections...
+                        </div>
+                        <div class="fr-skeleton">
+                            <div class="fr-skeleton-line w-80"></div>
+                            <div class="fr-skeleton-line w-100"></div>
+                        </div>
+                    `;
+                    const chunks = chunkText(text, 3500, 200);
+                    textToSummarize = await recursiveSummarizer(chunks, []);
+                } catch (err) {
+                    console.error("Scale summarization failed:", err);
+                    textToSummarize = text.substring(0, 3500); // Fallback to truncating
+                }
+            }
+
+            // Create final summarizer
+            summaryContent.innerHTML = `
+                <div class="fr-skeleton" style="margin-bottom:20px; color:var(--fr-text-dim);">
+                    Generating final summary...
+                </div>
+                <div class="fr-skeleton">
+                    <div class="fr-skeleton-line w-80"></div>
+                </div>
+            `;
+            const finalSummarizer = await self.Summarizer.create({ 
+                type: options.type, 
+                format: 'markdown', 
+                length: options.length,
+                monitor(m) {
+                    m.addEventListener('downloadprogress', (e) => {
+                        const percent = Math.round(e.loaded * 100);
+                        if (summaryContent) {
+                            if (e.loaded < 1) {
+                                summaryContent.innerHTML = `
+                                    <div class="fr-skeleton" style="margin-bottom:20px; color:var(--fr-text-dim);">
+                                        Downloading AI model... ${percent}%
+                                    </div>
+                                    <div style="width:100%; height:6px; background:var(--fr-border); margin-top:10px; border-radius:3px; overflow:hidden;">
+                                        <div style="height:100%; background:var(--fr-primary); width:${percent}%; transition:width 0.3s ease;"></div>
+                                    </div>
+                                `;
+                            } else {
+                                summaryContent.innerHTML = `
+                                    <div class="fr-skeleton" style="margin-bottom:20px; color:var(--fr-text-dim);">
+                                        Loading model into memory...
+                                    </div>
+                                    <div class="fr-skeleton">
+                                        <div class="fr-skeleton-line w-80"></div>
+                                    </div>
+                                `;
+                            }
+                        }
+                    });
+                }
+            });
+            
+            activeFinalSummarizer = finalSummarizer;
+
+            const summary = await finalSummarizer.summarize(textToSummarize);
+
+            // Destroy the standard summarizer to save memory
+            if (typeof finalSummarizer.destroy === 'function') {
+                try { finalSummarizer.destroy(); } catch(e) {}
+                if (activeFinalSummarizer === finalSummarizer) activeFinalSummarizer = null;
+            }
+
+            summaryContent.innerHTML = simpleMarkdownToHtml(summary);
+
+        } catch (error) {
+            console.error("Summarization error:", error);
+            summaryContent.innerHTML = `<div style="color:var(--fr-highlight);">An error occurred during summarization: ${error.message || error}</div>`;
         }
     }
 }
