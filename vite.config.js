@@ -17,6 +17,13 @@ export default defineConfig({
             },
         },
         sourcemap: false,
+        rollupOptions: {
+            input: {
+                popup: resolve(__dirname, 'public/popup.html'),
+                options: resolve(__dirname, 'public/options.html'),
+                pdf_worker: resolve(__dirname, 'public/pdf_worker.html')
+            }
+        }
     },
     plugins: [
         crx({ manifest }),

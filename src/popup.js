@@ -22,7 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-        if (!tab.id) return;
+        if (!tab || !tab.id) return;
+
+        // Determine if it's a PDF
+        const isPdf = tab.url && tab.url.toLowerCase().includes('.pdf');
 
         try {
             // Inject CSS first
@@ -37,19 +40,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 files: [contentScript]
             });
 
-            // Send start message
-            chrome.tabs.sendMessage(tab.id, {
-                action: "start_rsvp",
-                settings: { wpm: wpm, smartHighlight: smartHighlight, theme: theme }
-            }, (response) => {
-                if (chrome.runtime.lastError) {
-                    console.error("FasterReading: Could not send message to content script.", chrome.runtime.lastError);
-                    // Maybe alert the user? 
-                    // alert("Could not start reading. Refresh the page and try again.");
-                } else {
-                    window.close();
-                }
-            });
+            if (isPdf) {
+                chrome.tabs.sendMessage(tab.id, {
+                    action: "start_rsvp_pdf",
+                    url: tab.url,
+                    tabId: tab.id,
+                    settings: { wpm: wpm, smartHighlight: smartHighlight, theme: theme }
+                });
+                window.close();
+            } else {
+                chrome.tabs.sendMessage(tab.id, {
+                    action: "start_rsvp",
+                    settings: { wpm: wpm, smartHighlight: smartHighlight, theme: theme }
+                }, () => { window.close(); });
+            }
         } catch (err) {
             console.error("Failed to inject scripts", err);
             // This usually happens on chrome:// pages or if permission is missing

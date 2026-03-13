@@ -1,4 +1,3 @@
-
 if (window.skimFlowInitialized) {
     console.log("SkimFlow AI: Content script already initialized.");
 } else {
@@ -48,6 +47,64 @@ if (window.skimFlowInitialized) {
                 updateDisplay();
             }
             sendResponse({ status: "started" });
+        } else if (request.action === "start_rsvp_pdf") {
+            wpm = request.settings.wpm;
+            if (request.settings.smartHighlight !== undefined) {
+                smartHighlight = request.settings.smartHighlight;
+            }
+            if (request.settings.theme) {
+                currentTheme = request.settings.theme;
+                console.log("FasterReading: Theme set to", currentTheme);
+            }
+
+            if (!isReading) {
+                createOverlay();
+                document.getElementById('fr-word-strip').innerHTML = '<span class="fr-word active">Loading PDF...</span>';
+                isReading = true;
+
+                // Create hidden iframe if not exists
+                let iframe = document.getElementById('skimflow-pdf-worker-iframe');
+                if (iframe) {
+                    iframe.remove();
+                }
+
+                iframe = document.createElement('iframe');
+                iframe.id = 'skimflow-pdf-worker-iframe';
+                iframe.style.display = 'none';
+                iframe.src = chrome.runtime.getURL(`public/pdf_worker.html?url=${encodeURIComponent(request.url)}`);
+                document.body.appendChild(iframe);
+
+            } else {
+                console.log("FasterReading: Updating settings while reading...");
+                updateSpeed();
+                renderParagraphToDOM();
+                updateHighlightClass();
+                updateTheme();
+                updateDisplay();
+            }
+            sendResponse({ status: "started" });
+        } else if (request.action === "append_rsvp_text") {
+            if (isReading) {
+                addTextToParagraphs(request.text);
+            } else {
+                initRSVP(request.text);
+            }
+            sendResponse({ status: "appended" });
+        }
+    });
+
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'SKIMFLOW_PDF_TEXT') {
+            const hasStartedEl = document.getElementById('fr-word-strip');
+            if (hasStartedEl && hasStartedEl.innerHTML.includes('Loading PDF...')) {
+                hasStartedEl.innerHTML = ''; // clear loading text
+                initRSVP(event.data.text);
+            } else {
+                addTextToParagraphs(event.data.text);
+            }
+        } else if (event.data && event.data.type === 'SKIMFLOW_PDF_ERROR') {
+            const strip = document.getElementById('fr-word-strip');
+            if (strip) strip.innerHTML = `<span class="fr-word active" style="color:red; font-size:16px;">Error parsing PDF: ${event.data.error}</span>`;
         }
     });
 
@@ -55,15 +112,7 @@ if (window.skimFlowInitialized) {
         if (text) {
             // Process the provided text directly
             paragraphs = [];
-            // Split by double newlines or just newlines? Let's treat newlines as potential paragraph breaks
-            // Filter out empty lines
-            const rawParas = text.split(/\n+/).filter(p => p.trim().length > 0);
-            rawParas.forEach(pText => {
-                const words = pText.trim().split(/\s+/);
-                if (words.length > 0) {
-                    paragraphs.push(words);
-                }
-            });
+            addTextToParagraphs(text);
         } else {
             extractParagraphs();
         }
@@ -84,6 +133,42 @@ if (window.skimFlowInitialized) {
         // Start Loop
         startLoop();
         updatePlayPauseButton();
+    }
+
+    function addTextToParagraphs(text) {
+        if (!text) return;
+
+        const rawParas = text.split(/\n+/).filter(p => p.trim().length > 0);
+        let addedCount = 0;
+
+        rawParas.forEach(pText => {
+            const words = pText.trim().split(/\s+/);
+            let processedWords = [];
+            words.forEach(w => {
+                // Heuristic to split abnormally long words (e.g. from bad PDF extraction)
+                if (w.length > 20) {
+                    const parts = w.match(/([A-Z][a-z]+|[A-Z]+(?![a-z])|[a-z]+|[0-9]+|[^a-zA-Z0-9]+)/g);
+                    if (parts && parts.length > 1) {
+                        processedWords.push(...parts);
+                    } else {
+                        processedWords.push(w);
+                    }
+                } else {
+                    processedWords.push(w);
+                }
+            });
+
+            if (processedWords.length > 0) {
+                paragraphs.push(processedWords);
+                addedCount++;
+            }
+        });
+
+        // Update display with new total paragraphs if currently reading
+        if (isReading) {
+            updateDisplay();
+            updateStatus();
+        }
     }
 
 
