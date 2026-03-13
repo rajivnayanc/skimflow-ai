@@ -194,3 +194,77 @@ body.theme-dark footer {
     color: #333;
     /* Explicit default color */
 }
+
+/* Options page - Feature Guide overrides */
+.options-guide {
+    margin-top: 30px;
+    border-top: 2px solid #eee;
+    padding-top: 20px;
+}
+
+.options-guide .guide-toggle span:first-child {
+    font-size: 18px;
+    color: #34495e;
+    border-left: 4px solid #3498db;
+    padding-left: 10px;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.options-guide .guide-item {
+    background: #f8f9fa;
+    border-color: #e9ecef;
+}
+
+.options-guide .guide-item:hover {
+    border-color: #3498db;
+}
+
+.options-guide .guide-text strong {
+    color: #2c3e50;
+}
+
+.options-guide .guide-text small {
+    font-size: 13px;
+    color: #555;
+}
+
+.options-guide .guide-text code {
+    background: #e9ecef;
+    font-size: 12px;
+}
+
+/* Dark theme for guide on options page */
+body.theme-dark .options-guide {
+    border-top-color: #444;
+}
+
+body.theme-dark .options-guide .guide-toggle span:first-child {
+    color: #bdc3c7;
+}
+
+body.theme-dark .options-guide .guide-toggle .chevron {
+    color: #bdc3c7;
+}
+
+body.theme-dark .options-guide .guide-item {
+    background-color: #333;
+    border-color: #444;
+}
+
+body.theme-dark .options-guide .guide-item:hover {
+    border-color: #3498db;
+}
+
+body.theme-dark .options-guide .guide-text strong {
+    color: #ecf0f1;
+}
+
+body.theme-dark .options-guide .guide-text small {
+    color: #bdc3c7;
+}
+
+body.theme-dark .options-guide .guide-text code {
+    background: #444;
+    color: #ecf0f1;
+}

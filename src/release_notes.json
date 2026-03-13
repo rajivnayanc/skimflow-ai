@@ -1,5 +1,14 @@
 [
     {
+        "version": "1.2.0",
+        "changes": [
+            "PDF Speed Reading: Open any PDF — local or online — and speed-read it directly in the SkimFlow overlay.",
+            "AI Summarization: Select text, right-click, and choose \"Summarize with SkimFlow\" to get an instant AI-powered summary using Chrome's built-in Summarizer API.",
+            "Smart Summarization: Long texts are automatically chunked and summarized in sections, then combined into a single concise summary.",
+            "Live Status Updates: Real-time feedback on AI model download progress and summarization status."
+        ]
+    },
+    {
         "version": "1.1.1",
         "changes": [
             "Context Menu Reading: Select any text on a webpage, right-click, and choose \"Read with SkimFlow\" to read just that selection.",

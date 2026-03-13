@@ -13,6 +13,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.theme) themeSelect.value = data.theme;
     });
 
+    // Feature guide toggle
+    const guideToggle = document.getElementById('guideToggle');
+    const guideList = document.getElementById('guideList');
+    const guideChevron = document.getElementById('guideChevron');
+
+    chrome.storage.sync.get(['guideCollapsed'], (data) => {
+        if (data.guideCollapsed) {
+            guideList.classList.add('collapsed');
+            guideChevron.classList.add('collapsed');
+        }
+    });
+
+    guideToggle.addEventListener('click', () => {
+        const isCollapsed = guideList.classList.toggle('collapsed');
+        guideChevron.classList.toggle('collapsed', isCollapsed);
+        chrome.storage.sync.set({ guideCollapsed: isCollapsed });
+    });
+
     startBtn.addEventListener('click', async () => {
         const wpm = parseInt(wpmInput.value, 10);
         const smartHighlight = smartHighlightInput.checked;

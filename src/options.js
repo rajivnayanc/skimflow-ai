@@ -76,3 +76,21 @@ function applyTheme(theme) {
 document.addEventListener('DOMContentLoaded', restoreOptions);
 document.getElementById('save').addEventListener('click', saveOptions);
 document.getElementById('theme').addEventListener('change', (e) => applyTheme(e.target.value));
+
+// Feature guide toggle
+const guideToggle = document.getElementById('guideToggle');
+const guideList = document.getElementById('guideList');
+const guideChevron = document.getElementById('guideChevron');
+
+chrome.storage.sync.get(['guideCollapsed'], (data) => {
+    if (data.guideCollapsed) {
+        guideList.classList.add('collapsed');
+        guideChevron.classList.add('collapsed');
+    }
+});
+
+guideToggle.addEventListener('click', () => {
+    const isCollapsed = guideList.classList.toggle('collapsed');
+    guideChevron.classList.toggle('collapsed', isCollapsed);
+    chrome.storage.sync.set({ guideCollapsed: isCollapsed });
+});
