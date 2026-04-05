@@ -1,5 +1,30 @@
 import contentScript from '../src/content.js?script';
 
+/**
+ * Message with retry to handle race conditions during content script injection,
+ * especially in development mode with HMR/loaders.
+ */
+async function sendMessageWithRetry(tabId, message, maxRetries = 10) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await chrome.tabs.sendMessage(tabId, message);
+        } catch (err) {
+            const isConnectionError = err.message && (
+                err.message.includes("Could not establish connection") ||
+                err.message.includes("Receiving end does not exist")
+            );
+
+            if (isConnectionError && i < maxRetries - 1) {
+                console.log(`[SkimFlow] Message listener not ready, retrying... (${i + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, 200)); // Wait 200ms between retries
+                continue;
+            }
+            throw err;
+        }
+    }
+}
+
+
 chrome.runtime.onInstalled.addListener((details) => {
     console.log('Faster Reading Extension installed');
     chrome.contextMenus.create({
@@ -25,7 +50,7 @@ chrome.runtime.onInstalled.addListener((details) => {
         'teaser': 'Teaser',
         'headline': 'Headline'
     };
-    
+
     const summaryLengths = {
         'short': 'Short',
         'medium': 'Medium',
@@ -58,47 +83,44 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+    if (!tab || !tab.id) return;
+    const tabId = tab.id;
+
     if (info.menuItemId === "read-selection" && info.selectionText) {
-        if (!tab.id) return;
-
         try {
-            const sendMessage = async () => {
-                const data = await chrome.storage.sync.get(['wpm', 'smartHighlight', 'theme']);
-                const settings = {
-                    wpm: data.wpm || 300,
-                    smartHighlight: data.smartHighlight !== undefined ? data.smartHighlight : true,
-                    theme: data.theme || 'light'
-                };
-
-                try {
-                    await chrome.tabs.sendMessage(tab.id, {
-                        action: "start_rsvp",
-                        text: info.selectionText,
-                        settings: settings
-                    });
-                } catch (err) {
-                    console.log("Reading script not active, injecting...", err);
-
-                    await chrome.scripting.insertCSS({
-                        target: { tabId: tab.id },
-                        files: ['styles.css']
-                    });
-
-                    await chrome.scripting.executeScript({
-                        target: { tabId: tab.id },
-                        files: [contentScript]
-                    });
-
-                    await chrome.tabs.sendMessage(tab.id, {
-                        action: "start_rsvp",
-                        text: info.selectionText,
-                        settings: settings
-                    });
-                }
+            const data = await chrome.storage.sync.get(['wpm', 'smartHighlight', 'theme']);
+            const settings = {
+                wpm: data.wpm || 300,
+                smartHighlight: data.smartHighlight !== undefined ? data.smartHighlight : true,
+                theme: data.theme || 'light'
             };
 
-            await sendMessage();
+            try {
+                await sendMessageWithRetry(tabId, {
+                    action: "start_rsvp",
+                    text: info.selectionText,
+                    settings: settings
+                });
+            } catch (err) {
+                console.log("Reading script not active, injecting...", err);
 
+                await chrome.scripting.insertCSS({
+                    target: { tabId: tabId },
+                    files: ['styles.css']
+                });
+
+                await chrome.scripting.executeScript({
+                    target: { tabId: tabId },
+                    files: [contentScript]
+                });
+
+                // Even after injection, we use retry because the loader/import is async
+                await sendMessageWithRetry(tabId, {
+                    action: "start_rsvp",
+                    text: info.selectionText,
+                    settings: settings
+                });
+            }
         } catch (err) {
             console.error("Context menu reading action failed:", err);
         }
@@ -107,8 +129,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         if (info.menuItemId === "summarize-advanced-parent" || info.menuItemId.startsWith("summarize-type-")) {
             return;
         }
-
-        if (!tab.id) return;
 
         let type = "tldr";
         let length = "long";
@@ -121,44 +141,40 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         }
 
         try {
-            const sendSummarizeMessage = async () => {
-                const data = await chrome.storage.sync.get(['theme']);
-                const settings = {
-                    theme: data.theme || 'light'
-                };
-
-                try {
-                    await chrome.tabs.sendMessage(tab.id, {
-                        action: "summarize_text",
-                        text: info.selectionText,
-                        settings: settings,
-                        summaryType: type,
-                        summaryLength: length
-                    });
-                } catch (err) {
-                    console.log("Reading script not active, injecting for summarizer...", err);
-
-                    await chrome.scripting.insertCSS({
-                        target: { tabId: tab.id },
-                        files: ['styles.css']
-                    });
-
-                    await chrome.scripting.executeScript({
-                        target: { tabId: tab.id },
-                        files: [contentScript]
-                    });
-
-                    await chrome.tabs.sendMessage(tab.id, {
-                        action: "summarize_text",
-                        text: info.selectionText,
-                        settings: settings,
-                        summaryType: type,
-                        summaryLength: length
-                    });
-                }
+            const data = await chrome.storage.sync.get(['theme']);
+            const settings = {
+                theme: data.theme || 'light'
             };
 
-            await sendSummarizeMessage();
+            try {
+                await sendMessageWithRetry(tabId, {
+                    action: "summarize_text",
+                    text: info.selectionText,
+                    settings: settings,
+                    summaryType: type,
+                    summaryLength: length
+                });
+            } catch (err) {
+                console.log("Reading script not active, injecting for summarizer...", err);
+
+                await chrome.scripting.insertCSS({
+                    target: { tabId: tabId },
+                    files: ['styles.css']
+                });
+
+                await chrome.scripting.executeScript({
+                    target: { tabId: tabId },
+                    files: [contentScript]
+                });
+
+                await sendMessageWithRetry(tabId, {
+                    action: "summarize_text",
+                    text: info.selectionText,
+                    settings: settings,
+                    summaryType: type,
+                    summaryLength: length
+                });
+            }
         } catch (err) {
             console.error("Context menu summarize action failed:", err);
         }
