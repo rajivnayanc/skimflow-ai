@@ -22,7 +22,7 @@ SkimFlow AI is a powerful Chrome extension that helps you read faster and smarte
 
 1. Clone this repository to your local machine:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/skimflow-ai.git
+   git clone https://github.com/rajivnayanc/skimflow-ai.git
    cd skimflow-ai
    ```
 2. Install dependencies:
